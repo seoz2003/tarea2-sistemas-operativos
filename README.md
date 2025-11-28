@@ -274,7 +274,10 @@ Tarea 2 SO/
 
 ---
 
-## Autor
+## Autores
 
-Tarea 2 - Sistemas Operativos  
+Sergio Opazo Zamorano
+Franco Ponce Chacana
+Benjamin Puerta Pinto
+Jorge Avendaño Flores
 Universidad de Concepción 2025

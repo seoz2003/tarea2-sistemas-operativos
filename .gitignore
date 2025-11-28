@@ -1,0 +1,8 @@
+*.o
+*.exe
+barrera_test
+sim
+.vscode/
+*.swp
+*.swo
+*~

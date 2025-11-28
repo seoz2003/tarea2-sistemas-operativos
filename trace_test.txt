@@ -1,0 +1,12 @@
+# Archivo de prueba pequeño con 10 referencias
+# Direcciones virtuales en decimal
+0
+4096
+8192
+4096
+16384
+0
+8192
+12288
+4096
+20480

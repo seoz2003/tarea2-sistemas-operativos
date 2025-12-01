@@ -6,38 +6,30 @@
 #define MAX_PAGES 1000000
 #define MAX_LINE 256
 
-/**
- * Entrada en la tabla de páginas
- */
+//Entrada en la tabla de páginas
 typedef struct {
-    int valid;           // 1 si la página está en memoria, 0 si no
-    int marco;           // Número de marco físico asignado
+    int valid;           // 1 si la página está en memoria 0 si no
+    int marco;           
     int ref_bit;         // Bit de referencia para algoritmo del Reloj
 } page_table_entry_t;
 
-/**
- * Estructura del simulador
- */
+//Estructura del simulador
+ 
 typedef struct {
-    int num_marcos;                           // Número total de marcos disponibles
-    int page_size;                            // Tamaño del marco/página en bytes
-    int page_bits;                            // Bits para desplazamiento (offset)
-    uint64_t mask;                            // Máscara para extraer offset
-    
-    page_table_entry_t *page_table;           // Tabla de páginas
-    int *marcos;                              // Mapeo: marco -> npv
-    int clock_hand;                           // Puntero del reloj
-    
-    // Estadísticas
-    long long referencias;                    // Número total de referencias
-    long long fallos;                         // Número de fallos de página
-    
-    int verbose;                              // Modo verbose
+    int num_marcos;                           
+    int page_size;                            
+    int page_bits;                            
+    uint64_t mask;                               
+    page_table_entry_t *page_table;           
+    int *marcos;                             
+    int clock_hand;                              
+    long long referencias;                    
+    long long fallos;                          
+    int verbose;                              
 } simulator_t;
 
-/**
- * Calcula log2 de un número (para obtener bits de offset)
- */
+
+// Calcula log2 de un número (para obtener bits de offset)
 int log2_int(int n) {
     int bits = 0;
     while (n > 1) {
@@ -47,9 +39,7 @@ int log2_int(int n) {
     return bits;
 }
 
-/**
- * Inicializa el simulador
- */
+//Inicializa el simulador
 simulator_t* sim_init(int num_marcos, int page_size, int verbose) {
     simulator_t *sim = malloc(sizeof(simulator_t));
     if (!sim) {
@@ -66,7 +56,7 @@ simulator_t* sim_init(int num_marcos, int page_size, int verbose) {
     sim->fallos = 0;
     sim->verbose = verbose;
     
-    // Inicializar tabla de páginas (suficientemente grande)
+    // Inicializar tabla de páginas
     sim->page_table = calloc(MAX_PAGES, sizeof(page_table_entry_t));
     if (!sim->page_table) {
         perror("Error al asignar tabla de páginas");
@@ -90,9 +80,7 @@ simulator_t* sim_init(int num_marcos, int page_size, int verbose) {
     return sim;
 }
 
-/**
- * Libera recursos del simulador
- */
+ // Libera recursos del simulador
 void sim_destroy(simulator_t *sim) {
     if (sim) {
         free(sim->page_table);
@@ -101,9 +89,7 @@ void sim_destroy(simulator_t *sim) {
     }
 }
 
-/**
- * Encuentra un marco libre o devuelve -1 si no hay
- */
+ //Encuentra un marco libre o devuelve -1 si no hay
 int find_free_frame(simulator_t *sim) {
     for (int i = 0; i < sim->num_marcos; i++) {
         if (sim->marcos[i] == -1) {
@@ -113,9 +99,9 @@ int find_free_frame(simulator_t *sim) {
     return -1;
 }
 
-/**
- * Algoritmo del Reloj para encontrar víctima
- * Busca una página con ref_bit = 0, dando una segunda oportunidad a las que tienen ref_bit = 1
+/*
+ Algoritmo del Reloj para encontrar víctima
+ Busca una página con ref_bit = 0, dando una segunda oportunidad a las que tienen ref_bit = 1
  */
 int clock_evict(simulator_t *sim) {
     while (1) {
@@ -123,7 +109,7 @@ int clock_evict(simulator_t *sim) {
         int npv = sim->marcos[marco];
         
         if (npv == -1) {
-            // Marco libre (no debería pasar si se llama correctamente)
+            // Marco libre
             int victim = sim->clock_hand;
             sim->clock_hand = (sim->clock_hand + 1) % sim->num_marcos;
             return victim;
@@ -131,51 +117,38 @@ int clock_evict(simulator_t *sim) {
         
         // Revisar bit de referencia
         if (sim->page_table[npv].ref_bit == 0) {
-            // Víctima encontrada
             int victim = sim->clock_hand;
             sim->clock_hand = (sim->clock_hand + 1) % sim->num_marcos;
             return victim;
         } else {
-            // Dar segunda oportunidad: poner ref_bit = 0
             sim->page_table[npv].ref_bit = 0;
             sim->clock_hand = (sim->clock_hand + 1) % sim->num_marcos;
         }
     }
 }
 
-/**
- * Procesa una dirección virtual
- */
+//Procesa direccion virtual
 void process_address(simulator_t *sim, uint64_t vaddr) {
     sim->referencias++;
-    
-    // Descomponer dirección virtual
+    //Descompone dirección virtual
     uint64_t offset = vaddr & sim->mask;
     uint64_t npv = vaddr >> sim->page_bits;
-    
+
     int hit = 0;
     int marco = -1;
     uint64_t paddr = 0;
     
-    // Verificar si la página está en memoria
+    // Verificar si la pagina esta en memoria
     if (sim->page_table[npv].valid) {
-        // HIT
         hit = 1;
         marco = sim->page_table[npv].marco;
-        sim->page_table[npv].ref_bit = 1;  // Marcar como referenciada
+        sim->page_table[npv].ref_bit = 1;  
     } else {
-        // FALLO
         sim->fallos++;
-        
-        // Buscar marco libre
-        marco = find_free_frame(sim);
-        
+        marco = find_free_frame(sim); // Buscar marco libre
         if (marco == -1) {
-            // No hay marco libre, usar algoritmo del Reloj
-            marco = clock_evict(sim);
-            
-            // Invalidar la página que estaba en este marco
-            int old_npv = sim->marcos[marco];
+            marco = clock_evict(sim);  // No hay marco libre, usar algoritmo del Reloj
+            int old_npv = sim->marcos[marco];      // Invalidar la página que estaba en este marco
             if (old_npv != -1) {
                 sim->page_table[old_npv].valid = 0;
             }
@@ -203,16 +176,13 @@ void process_address(simulator_t *sim, uint64_t vaddr) {
     }
 }
 
-/**
- * Procesa archivo de trazas
- */
+//Procesa archivo de trazas
 void process_trace_file(simulator_t *sim, const char *filename) {
     FILE *file = fopen(filename, "r");
     if (!file) {
         fprintf(stderr, "Error: No se pudo abrir el archivo %s\n", filename);
         return;
     }
-    
     char line[MAX_LINE];
     while (fgets(line, sizeof(line), file)) {
         // Eliminar espacios y saltos de línea
@@ -228,16 +198,13 @@ void process_trace_file(simulator_t *sim, const char *filename) {
         } else {
             sscanf(p, "%llu", (unsigned long long*)&vaddr);
         }
-        
         process_address(sim, vaddr);
     }
     
     fclose(file);
 }
 
-/**
- * Imprime estadísticas finales
- */
+ //Imprimir estadisticas
 void print_statistics(simulator_t *sim) {
     printf("\n========================================\n");
     printf("  ESTADÍSTICAS DEL SIMULADOR\n");
@@ -253,9 +220,7 @@ void print_statistics(simulator_t *sim) {
     printf("========================================\n");
 }
 
-/**
- * Programa principal
- */
+
 int main(int argc, char *argv[]) {
     if (argc < 4) {
         fprintf(stderr, "Uso: %s <Nmarcos> <tamañomarco> [--verbose] <archivo_traza>\n", argv[0]);
@@ -307,15 +272,9 @@ int main(int argc, char *argv[]) {
     if (!sim) {
         return 1;
     }
-    
-    // Procesar archivo de trazas
+
     process_trace_file(sim, trace_file);
-    
-    // Imprimir estadísticas
     print_statistics(sim);
-    
-    // Limpiar
     sim_destroy(sim);
-    
     return 0;
 }

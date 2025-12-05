@@ -8,58 +8,45 @@
 
 // Estructura para pasar parámetros a las hebras
 typedef struct {
-    int tid;              // ID de la hebra
-    int N;                // Número total de hebras
-    int E;                // Número de etapas
-    barrera_t *barrera;   // Puntero a la barrera compartida
+    int tid;             
+    int N;                
+    int E;                
+    barrera_t *barrera;   
 } thread_args_t;
 
-/**
- * Función que ejecuta cada hebra
- * Simula trabajo y sincroniza en cada etapa usando la barrera
- */
 void* thread_function(void* arg) {
     thread_args_t *args = (thread_args_t*)arg;
     int tid = args->tid;
     int E = args->E;
     barrera_t *barrera = args->barrera;
 
-    // Ejecutar E etapas
+    // Ejecuta e etapas
     for (int etapa = 0; etapa < E; etapa++) {
-        // a) Simular trabajo con tiempo aleatorio (50-150 ms)
+        //Simular trabajo
         int trabajo_us = 50000 + (rand() % 100000);
         usleep(trabajo_us);
-
-        // b) Imprimir antes de esperar en la barrera
+        //Imprimir antes de esperar en la barrera
         printf("[Hebra %d] esperando en etapa %d\n", tid, etapa);
         fflush(stdout);
-
-        // c) Llamar a wait() - sincronización en la barrera
         barrera_wait(barrera);
-
-        // d) Imprimir después de pasar la barrera
+        //imprime despues de pasar
         printf("[Hebra %d] pasó barrera en etapa %d\n", tid, etapa);
         fflush(stdout);
-
-        // Pequeña pausa para visualizar mejor la sincronización
+        //Para visualizar sincronizacion
         usleep(10000);
     }
-
     return NULL;
 }
 
-/**
- * Programa principal que verifica el comportamiento de la barrera
- */
+ //Programa principal que verifica el comportamiento de la barrera
 int main(int argc, char *argv[]) {
-    int N = 5;  // Número de hebras por defecto
-    int E = 4;  // Número de etapas por defecto
+    int N = 5; 
+    int E = 4; 
 
-    // Leer parámetros de línea de comandos
     if (argc >= 2) {
         N = atoi(argv[1]);
         if (N <= 0) {
-            fprintf(stderr, "Error: El número de hebras debe ser positivo\n");
+            fprintf(stderr, "Error: El numero de hebras debe ser positivo\n");
             return 1;
         }
     }
@@ -67,7 +54,7 @@ int main(int argc, char *argv[]) {
     if (argc >= 3) {
         E = atoi(argv[2]);
         if (E <= 0) {
-            fprintf(stderr, "Error: El número de etapas debe ser positivo\n");
+            fprintf(stderr, "Error: El numero de etapas debe ser positivo\n");
             return 1;
         }
     }
